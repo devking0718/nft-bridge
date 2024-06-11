@@ -12,7 +12,7 @@ module.exports = {
     solidity: {
         compilers: [
             {
-                version: "0.8.17",
+                version: "0.8.19",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -33,6 +33,10 @@ module.exports = {
         },
         bsc_main: {
             url: "https://bsc-dataseed1.binance.org",
+            accounts: [process.env.PRIVATE_KEY],
+        },
+        amoy: {
+            url: "https://polygon-amoy.infura.io/v3/45eb256800c24b6c854fb8cd4c73b2c3",
             accounts: [process.env.PRIVATE_KEY],
         },
     },

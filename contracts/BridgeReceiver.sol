@@ -23,9 +23,10 @@ contract BridgeReceiver is CCIPReceiver, Ownable {
 
     event MessageReceived(
         bytes32 indexed messageId, // The unique ID of the message.
-        uint64 indexed sourceChainSelector, // The chain selector of the source chain.
-        address sender, // The address of the sender from the source chain.
-        string text // The text that was received.
+        address indexed srcCollection,
+        uint64 tokenId,
+        address indexed dstCollection,
+        address receiver
     );
 
     constructor(address _router, uint64 _srcChain) CCIPReceiver(_router) {
@@ -35,6 +36,13 @@ contract BridgeReceiver is CCIPReceiver, Ownable {
 
     function setBridgeSender(address _bridgeSender) external onlyOwner {
         bridgeSender = _bridgeSender;
+    }
+
+    function addCollection(
+        address srcCollection,
+        address dstCollection
+    ) external onlyOwner {
+        nftCollectionMapping[srcCollection] = dstCollection;
     }
 
     function _ccipReceive(
@@ -53,16 +61,20 @@ contract BridgeReceiver is CCIPReceiver, Ownable {
             return;
         }
 
-        require(nftCollectionMapping[data.nftCollection] != address(0), "BridgeReceiver: NFT Collection not added on this Bridge");
+        require(
+            nftCollectionMapping[data.nftCollection] != address(0),
+            "BridgeReceiver: NFT Collection not added on this Bridge"
+        );
 
         IBridgeNFT nft = IBridgeNFT(nftCollectionMapping[data.nftCollection]);
         nft.bridgeMint(data.receiver, data.tokenId);
 
         emit MessageReceived(
             any2EvmMessage.messageId,
-            any2EvmMessage.sourceChainSelector, // fetch the source chain identifier (aka selector)
-            abi.decode(any2EvmMessage.sender, (address)), // abi-decoding of the sender address,
-            abi.decode(any2EvmMessage.data, (string))
+            data.nftCollection,
+            data.tokenId,
+            nftCollectionMapping[data.nftCollection],
+            data.receiver
         );
     }
 }
