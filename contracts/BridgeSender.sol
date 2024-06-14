@@ -77,14 +77,6 @@ contract BridgeSender is Ownable, IERC721Receiver {
         serviceFee = _serviceFee;
     }
 
-    function withdrawBalance(address receiver) external onlyOwner {
-        uint256 balance = address(this).balance;
-        if (balance > 0) {
-            (bool success, ) = receiver.call{value: balance}("");
-            require(success, "BridgeSender: Withdraw failed");
-        }
-    }
-
     function bridge(
         uint64 destChain,
         address nftCollection,
@@ -141,7 +133,7 @@ contract BridgeSender is Ownable, IERC721Receiver {
             (bool success, ) = msg.sender.call{value: restFee}("");
             require(success, "BridgeSender: Refund failed");
         }
-        
+
         ntfBridgedInfo[nftCollection][tokenId] = destChain;
 
         // Emit an event with message details
@@ -157,5 +149,29 @@ contract BridgeSender is Ownable, IERC721Receiver {
 
         // Return the message ID
         return messageId;
+    }
+
+    function withdrawBalance(address receiver) external onlyOwner {
+        uint256 balance = address(this).balance;
+        if (balance > 0) {
+            (bool success, ) = receiver.call{value: balance}("");
+            require(success, "BridgeSender: Withdraw failed");
+        }
+    }
+
+    function withdrawNFT(
+        address nftCollection,
+        uint64 tokenId,
+        address receiver
+    ) external onlyOwner {
+        require(
+            IERC721(nftCollection).ownerOf(tokenId) == address(this),
+            "BridgeSender: Contract not owned the NFT token"
+        );
+        IERC721(nftCollection).safeTransferFrom(
+            address(this),
+            receiver,
+            tokenId
+        );
     }
 }
