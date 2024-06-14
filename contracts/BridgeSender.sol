@@ -15,15 +15,14 @@ contract BridgeSender is Ownable, IERC721Receiver {
     }
 
     IRouterClient public ROUTER; // get from chainlink
-    uint64 public DEST_CHAIN; // get from chainlink
-
-    address public bridgeReceiver; // address of brdigeReciver on dest chain
+    mapping(uint64 => address) public bridgeReceivers; // receiver address of dest chains
     uint256 public serviceFee; // fee for this service
-
-    mapping(address => bool) public nftCollectionAdded;
+    mapping(address => bool) public nftCollectionAdded; // if NFT collection is added or not
+    mapping(address => mapping(uint64 => uint64)) public ntfBridgedInfo; // (NFT, id) => bridged chain
 
     event MessageSent(
         bytes32 indexed messageId, // The unique ID of the CCIP message.
+        uint64 destChain, // Dest Chain Selector.
         address indexed collectionAddress, // NFT Collection address.
         uint64 tokenId, // NFT Token ID
         address indexed receiver, // The address of the NFT receiver on the destination chain.
@@ -37,9 +36,8 @@ contract BridgeSender is Ownable, IERC721Receiver {
         uint256 tokenId
     );
 
-    constructor(address _router, uint64 _destChain) {
+    constructor(address _router) {
         ROUTER = IRouterClient(_router);
-        DEST_CHAIN = _destChain;
     }
 
     function lockNFT(address collectionAddress, uint256 tokenId) private {
@@ -68,8 +66,11 @@ contract BridgeSender is Ownable, IERC721Receiver {
         nftCollectionAdded[nftCollection] = false;
     }
 
-    function setBridgeReceiver(address _bridgeReceiver) external onlyOwner {
-        bridgeReceiver = _bridgeReceiver;
+    function setBridgeReceiver(
+        uint64 _destChain,
+        address _bridgeReceiver
+    ) external onlyOwner {
+        bridgeReceivers[_destChain] = _bridgeReceiver;
     }
 
     function setServiceFee(uint256 _serviceFee) external onlyOwner {
@@ -85,10 +86,15 @@ contract BridgeSender is Ownable, IERC721Receiver {
     }
 
     function bridge(
+        uint64 destChain,
         address nftCollection,
         uint64 tokenId,
         address receiver
     ) external payable returns (bytes32 messageId) {
+        require(
+            bridgeReceivers[destChain] != address(0),
+            "BridgeSender: That chain not allowed for Bridge"
+        );
         require(
             nftCollectionAdded[nftCollection],
             "BridgeSender: NFT Collection not added on this Bridge"
@@ -105,7 +111,7 @@ contract BridgeSender is Ownable, IERC721Receiver {
         });
 
         Client.EVM2AnyMessage memory evm2AnyMessage = Client.EVM2AnyMessage({
-            receiver: abi.encode(bridgeReceiver), // ABI-encoded receiver address
+            receiver: abi.encode(bridgeReceivers[destChain]), // ABI-encoded receiver address
             data: abi.encode(data),
             tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array indicating no tokens are being sent
             extraArgs: Client._argsToBytes(
@@ -114,7 +120,7 @@ contract BridgeSender is Ownable, IERC721Receiver {
             feeToken: address(0) // Set the feeToken  address, indicating Native Token will be used for bridgeFee
         });
 
-        uint256 bridgeFee = ROUTER.getFee(DEST_CHAIN, evm2AnyMessage); // Get the fee required to send the message
+        uint256 bridgeFee = ROUTER.getFee(destChain, evm2AnyMessage); // Get the fee required to send the message
         require(
             msg.value >= bridgeFee + serviceFee,
             "BridgeSender: Insufficient Fee"
@@ -122,7 +128,7 @@ contract BridgeSender is Ownable, IERC721Receiver {
 
         // Send the message through the router and store the returned message ID
         messageId = ROUTER.ccipSend{value: bridgeFee}(
-            DEST_CHAIN,
+            destChain,
             evm2AnyMessage
         );
 
@@ -135,10 +141,13 @@ contract BridgeSender is Ownable, IERC721Receiver {
             (bool success, ) = msg.sender.call{value: restFee}("");
             require(success, "BridgeSender: Refund failed");
         }
+        
+        ntfBridgedInfo[nftCollection][tokenId] = destChain;
 
         // Emit an event with message details
         emit MessageSent(
             messageId,
+            destChain,
             nftCollection,
             tokenId,
             receiver,

@@ -15,65 +15,65 @@ contract BridgeReceiver is CCIPReceiver, Ownable {
     }
 
     IRouterClient public ROUTER; // get from chainlink
-    uint64 public SRC_CHAIN; // get from chainlink
-
-    address public bridgeSender;
-
-    mapping(address => address) public nftCollectionMapping;
+    mapping(uint64 => address) public bridgeSenders;
+    mapping(uint64 => mapping(address => address)) public nftCollectionMapping; // (src_chain, nft_address) => nft_address
 
     event MessageReceived(
         bytes32 indexed messageId, // The unique ID of the message.
+        uint64 srcChain,
         address indexed srcCollection,
         uint64 tokenId,
         address indexed dstCollection,
         address receiver
     );
 
-    constructor(address _router, uint64 _srcChain) CCIPReceiver(_router) {
+    constructor(address _router) CCIPReceiver(_router) {
         ROUTER = IRouterClient(_router);
-        SRC_CHAIN = _srcChain;
     }
 
-    function setBridgeSender(address _bridgeSender) external onlyOwner {
-        bridgeSender = _bridgeSender;
+    function setBridgeSender(
+        uint64 _srcChain,
+        address _bridgeSender
+    ) external onlyOwner {
+        bridgeSenders[_srcChain] = _bridgeSender;
     }
 
     function addCollection(
+        uint64 srcChain,
         address srcCollection,
         address dstCollection
     ) external onlyOwner {
-        nftCollectionMapping[srcCollection] = dstCollection;
+        nftCollectionMapping[srcChain][srcCollection] = dstCollection;
     }
 
     function _ccipReceive(
         Client.Any2EVMMessage memory any2EvmMessage
     ) internal override {
+        uint64 srcChain = any2EvmMessage.sourceChainSelector;
         address sender = abi.decode(any2EvmMessage.sender, (address));
         MessageInfo memory data = abi.decode(
             any2EvmMessage.data,
             (MessageInfo)
         );
 
-        if (
-            any2EvmMessage.sourceChainSelector != SRC_CHAIN ||
-            sender != bridgeSender
-        ) {
+        if (sender != bridgeSenders[srcChain]) {
             return;
         }
 
         require(
-            nftCollectionMapping[data.nftCollection] != address(0),
+            nftCollectionMapping[srcChain][data.nftCollection] != address(0),
             "BridgeReceiver: NFT Collection not added on this Bridge"
         );
 
-        IBridgeNFT nft = IBridgeNFT(nftCollectionMapping[data.nftCollection]);
+        IBridgeNFT nft = IBridgeNFT(nftCollectionMapping[srcChain][data.nftCollection]);
         nft.bridgeMint(data.receiver, data.tokenId);
 
         emit MessageReceived(
             any2EvmMessage.messageId,
+            srcChain,
             data.nftCollection,
             data.tokenId,
-            nftCollectionMapping[data.nftCollection],
+            nftCollectionMapping[srcChain][data.nftCollection],
             data.receiver
         );
     }
