@@ -23,7 +23,7 @@ module.exports = {
         ],
     },
     networks: {
-        bsc_test: {
+        bscTestnet: {
             url: "https://data-seed-prebsc-1-s1.binance.org:8545",
             accounts: [process.env.PRIVATE_KEY],
         },
@@ -31,11 +31,11 @@ module.exports = {
             url: "https://sepolia.infura.io/v3/45eb256800c24b6c854fb8cd4c73b2c3",
             accounts: [process.env.PRIVATE_KEY],
         },
-        bsc_main: {
+        bsc: {
             url: "https://bsc-dataseed1.binance.org",
             accounts: [process.env.PRIVATE_KEY],
         },
-        amoy: {
+        polygonAmoy: {
             url: "https://polygon-amoy.infura.io/v3/45eb256800c24b6c854fb8cd4c73b2c3",
             accounts: [process.env.PRIVATE_KEY],
         },
@@ -44,9 +44,20 @@ module.exports = {
         timeout: 1000000000,
     },
     etherscan: {
-        apiKey: process.env.ETHERSCAN_API_KEY,
-    },
-    polygonscan: {
-        apiKey: process.env.POLYGONSCAN_API_KEY
+        apiKey: {
+            sepolia: process.env.ETHERSCAN_API_KEY,
+            bscTestnet: process.env.BSCSCAN_API_KEY,
+            polygonAmoy: process.env.POLYGONSCAN_API_KEY,
+        },
+        customChains: [
+            {
+                network: "polygonAmoy",
+                chainId: 80002,
+                urls: {
+                    apiURL: "https://api-amoy.polygonscan.com/api",
+                    browserURL: "https://amoy.polygonscan.com"
+                }
+            }
+        ]
     }
 };

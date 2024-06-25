@@ -14,6 +14,8 @@ const MATIC_SELECTOR = "16281711391670634445";
 const MATIC_NFT = "0x968161b1EF14577074a8a647F0e613Bf4F3a6F65";
 const MATIC_BRIDGE = "0xafc4fb00361495c6f93Fc6f699fD99c1285ceAb4";
 
+const BNB_ROUTER = "0xE1053aE1857476f36A3C62580FF9b016E8EE8F6f";
+const BNB_SELECTOR = "13264668187771770619";
 
 const NFT_NAME = "Ambassadors";
 const NFT_SYMBOL = "Ambassadors";
@@ -58,8 +60,8 @@ async function bridge_receiver() {
 async function bridge_manager() {
     const BR = await ethers.getContractFactory("BridgeManager");
     console.log("Deploying BridgeManager...");
-    const contract = await BR.deploy(MATIC_ROUTER);
-    console.log("BridgeReceiver:", contract.address);
+    const contract = await BR.deploy(BNB_ROUTER);
+    console.log("BridgeManager:", contract.address);
 }
 
 async function bridge_nft() {
@@ -70,7 +72,7 @@ async function bridge_nft() {
 }
 
 async function bridge_set(){
-    
+
 }
 
 // check_network();
@@ -78,6 +80,6 @@ async function bridge_set(){
 
 // bridge_sender();
 //bridge_receiver();
-// bridge_nft();
+bridge_nft();
 
-bridge_manager();
+// bridge_manager();
