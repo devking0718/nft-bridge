@@ -3,10 +3,18 @@ const { ethers, upgrades } = require("hardhat");
 const UNISWAP_V2_ROUTER = "0x425141165d3DE9FEC831896C016617a52363b687";
 
 const NFT_BASE_URL = "https://ipfs.io/ipfs/QmV6kA1AedDtbLWB4RZm2gMLjFrifwt4gEmQeWD6t2ywLW/";
+
 const ETH_ROUTER = "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59";
 const ETH_SELECTOR = "16015286601757825753";
+const ETH_NFT = "0x56890757d6291616643298bfd794dbc3d8D9a0aa";
+const ETH_BRIDGE = "0xE13945259fE183D7319047f40Cc7430652fA35cC";
+
 const MATIC_ROUTER = "0x9C32fCB86BF0f4a1A8921a9Fe46de3198bb884B2";
 const MATIC_SELECTOR = "16281711391670634445";
+const MATIC_NFT = "0x968161b1EF14577074a8a647F0e613Bf4F3a6F65";
+const MATIC_BRIDGE = "0xafc4fb00361495c6f93Fc6f699fD99c1285ceAb4";
+
+
 const NFT_NAME = "Ambassadors";
 const NFT_SYMBOL = "Ambassadors";
 
@@ -47,6 +55,13 @@ async function bridge_receiver() {
     console.log("BridgeReceiver:", contract.address);
 }
 
+async function bridge_manager() {
+    const BR = await ethers.getContractFactory("BridgeManager");
+    console.log("Deploying BridgeManager...");
+    const contract = await BR.deploy(MATIC_ROUTER);
+    console.log("BridgeReceiver:", contract.address);
+}
+
 async function bridge_nft() {
     const BN = await ethers.getContractFactory("BridgeNFT");
     console.log("Deploying BridgeNFT...");
@@ -54,9 +69,15 @@ async function bridge_nft() {
     console.log("BridgeNFT:", contract.address);
 }
 
+async function bridge_set(){
+    
+}
+
 // check_network();
 // main();
 
 // bridge_sender();
-bridge_receiver();
+//bridge_receiver();
 // bridge_nft();
+
+bridge_manager();
