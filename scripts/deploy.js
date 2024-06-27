@@ -58,9 +58,20 @@ async function bridge_receiver() {
 }
 
 async function bridge_manager() {
-    const BR = await ethers.getContractFactory("BridgeManager");
+    const BM = await ethers.getContractFactory("BridgeManager");
     console.log("Deploying BridgeManager...");
-    const contract = await BR.deploy(BNB_ROUTER);
+    const contract = await BM.deploy(BNB_ROUTER);
+    console.log("BridgeManager:", contract.address);
+}
+
+async function bridge_manager_upgradable() {
+    const BM = await ethers.getContractFactory("BridgeManager");
+    console.log("Deploying BridgeManager...");
+    const contract = await upgrades.deployProxy(BM, [MATIC_ROUTER], {
+        initializer: "initialize",
+        kind: "transparent",
+    });
+    await contract.deployed();
     console.log("BridgeManager:", contract.address);
 }
 
@@ -79,7 +90,8 @@ async function bridge_set(){
 // main();
 
 // bridge_sender();
-//bridge_receiver();
-bridge_nft();
+// bridge_receiver();
+// bridge_nft();
 
 // bridge_manager();
+bridge_manager_upgradable();

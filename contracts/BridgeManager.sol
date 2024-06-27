@@ -3,13 +3,13 @@ pragma solidity 0.8.19;
 
 import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
-import {CCIPReceiver} from "@chainlink/contracts-ccip/src/v0.8/ccip/applications/CCIPReceiver.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IBridgeNFT} from "./BridgeNFT.sol";
+import {CCIPReceiverUpgradeable} from "./CCIPReceiverUpgradeable.sol";
 
-contract BridgeManager is Ownable, IERC721Receiver, CCIPReceiver {
+contract BridgeManager is OwnableUpgradeable, CCIPReceiverUpgradeable, IERC721Receiver {
     struct MessageInfo {
         address srcCollection;
         address dstCollection;
@@ -58,7 +58,9 @@ contract BridgeManager is Ownable, IERC721Receiver, CCIPReceiver {
         uint256 tokenId
     );
 
-    constructor(address _router) CCIPReceiver(_router) {
+    function initialize(address _router) public initializer {
+        __Ownable_init();
+        __CCIPReceiver_init(_router);
         ROUTER = IRouterClient(_router);
     }
 
