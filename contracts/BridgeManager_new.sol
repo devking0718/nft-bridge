@@ -456,7 +456,7 @@ contract BridgeManager is
             uint256 tokenId = tokenIds[i];
             // If the NFT is held by this contract, transfer it back.
             if (
-               s_nftBridgedInfo[collection][tokenId] != 0 &&
+                s_nftBridgedInfo[collection][tokenId] != 0 &&
                 IERC721(collection).ownerOf(tokenId) == address(this)
             ) {
                 IERC721(collection).safeTransferFrom(
@@ -469,7 +469,7 @@ contract BridgeManager is
                 IBridgeNFT nft = IBridgeNFT(collection);
                 nft.bridgeMint(receiver, tokenId);
             }
-                s_nftSenderInfo[collection][tokenId] = address(0);
+            s_nftSenderInfo[collection][tokenId] = address(0);
             unchecked {
                 s_nftNonceStore[collection][tokenId]++;
             }
